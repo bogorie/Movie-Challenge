@@ -25,8 +25,9 @@ public class MovieController {
     public List<MovieDTO> getMovies(@RequestParam(required = false) Optional<String> sort,
                                     @RequestParam(required = false) Optional<String> genres,
                                     @RequestParam(required = false) Optional<Integer> limit,
-                                    @RequestParam(required = false) Optional<Integer> page){
-        return movieService.getMovies(sort, genres, limit, page);
+                                    @RequestParam(required = false) Optional<Integer> page,
+                                    @RequestParam(required = false) Optional<String> title){
+        return movieService.getMovies(sort, genres, limit, page, title);
     }
 
 }

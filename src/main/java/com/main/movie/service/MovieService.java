@@ -23,13 +23,14 @@ public class MovieService {
         return movie.orElse(emptyMovie);
     }
 
-    public List<MovieDTO> getMovies(Optional<String> sort, Optional<String> genres, Optional<Integer> limit, Optional<Integer> page){
+    public List<MovieDTO> getMovies(Optional<String> sort, Optional<String> genres, Optional<Integer> limit, Optional<Integer> page, Optional<String> title){
         int start = page.orElse(0);
         if (start != 0) start += limit.orElse(10);
 
         if(sort.isPresent() && sort.get().equalsIgnoreCase("title")){
             return StreamSupport.stream(moviesRepository.findAll().spliterator(), false)
                     .sorted(Comparator.comparing(MovieDTO::getTitle))
+                    .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                     .filter(f -> {
                         if (!genres.isPresent())
                             return false;
@@ -45,6 +46,7 @@ public class MovieService {
         }
         else{
             return StreamSupport.stream(moviesRepository.findAll().spliterator(), false)
+                    .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                     .filter(f -> !genres.isPresent() || f.getGenres().toLowerCase().contains(genres.get().toLowerCase()))
                     .skip(start)
                     .limit(limit.orElse(10))
