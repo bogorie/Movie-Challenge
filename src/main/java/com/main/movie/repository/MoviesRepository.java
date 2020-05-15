@@ -12,4 +12,8 @@ public interface MoviesRepository extends CrudRepository<MovieDTO,Integer> {
     @Query( value = "select * from movie m order by m.title",
             nativeQuery = true)
     Iterable<MovieDTO> findAllOrderByTitle();
+
+    @Query( value = "select * from movie limit ?1, ?2",
+            nativeQuery = true)
+    Iterable<MovieDTO> findByPage(Integer start, Integer limit);
 }

@@ -2,11 +2,12 @@ package com.main.movie.repository;
 
 import com.main.movie.model.MovieDTO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 
+@Component
 public class MovieDAO implements MovieDAOInterface{
 
     @Autowired
@@ -20,7 +21,7 @@ public class MovieDAO implements MovieDAOInterface{
 
     @Override
     public List<MovieDTO> findAll() {
-        return (List) moviesRepository.findAll();
+        return (List<MovieDTO>) moviesRepository.findAll();
     }
 
     @Override
@@ -31,5 +32,10 @@ public class MovieDAO implements MovieDAOInterface{
     @Override
     public Iterable<MovieDTO> findAllOrderByTitle(){
         return moviesRepository.findAllOrderByTitle();
+    }
+
+    @Override
+    public List<MovieDTO> findByPage(Integer start, Integer limit){
+        return (List<MovieDTO>) moviesRepository.findByPage(start, limit);
     }
 }
