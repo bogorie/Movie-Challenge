@@ -1,9 +1,15 @@
 package com.main.movie.service;
 
 import com.main.movie.model.MovieDTO;
+import com.main.movie.model.MovieDetail;
+import com.main.movie.model.Response;
+import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -13,10 +19,12 @@ import java.util.stream.Collectors;
 public class MovieService {
     @Autowired
     private MovieDAO movieDAO;
+    @Autowired
+    private LinkDAO linkDAO;
 
-    public MovieDTO getMovie(Integer movie_id){
+    public MovieDTO getMovie(Integer movieId){
         MovieDTO emptyMovie = new MovieDTO();
-        Optional<MovieDTO> movie = movieDAO.findById(movie_id);
+        Optional<MovieDTO> movie = movieDAO.findById(movieId);
         return movie.orElse(emptyMovie);
     }
 
@@ -52,4 +60,30 @@ public class MovieService {
             //return movieDAO.findByPage(start, limit.get());
         }
     }
+
+    public MovieDetail getApiDetails(Integer tmdbId){
+        RestTemplate restTemplate = new RestTemplate();
+        String host = "https://api.themoviedb.org/3/movie/";
+        String apiKey = "?api_key=16a34aee6285afd1a01796ab3a6a45bb&language=en-US";
+        String uri = host + tmdbId.toString() + apiKey;
+        return restTemplate.getForObject(uri, MovieDetail.class);
+    }
+
+   public List<Response> getData(Optional<String> sort, Optional<String> genres, Optional<Integer> limit, Optional<Integer> page, Optional<String> title){
+        List<Response> responseDTOList = new ArrayList<>();
+        List<MovieDTO> movieDTOList = this.getMovies(sort, genres, limit, page, title);
+
+        for(MovieDTO m : movieDTOList){
+            Optional<Integer> tmdbId = linkDAO.findTmdbId(m.getMovieId());
+            if(tmdbId.isPresent()){
+                MovieDetail movieDetail = getApiDetails(tmdbId.get());
+                String poster_path = "https://image.tmdb.org/t/p/w500" + movieDetail.getPoster_path();
+                Response response = new Response(m.getMovieId(), m.getTitle(), m.getGenres(),
+                        poster_path, movieDetail.getRelease_date(), movieDetail.getBudget());
+                responseDTOList.add(response);
+            }
+        }
+        return responseDTOList;
+    }
+
 }
