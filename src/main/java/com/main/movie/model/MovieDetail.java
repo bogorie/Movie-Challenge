@@ -1,18 +1,17 @@
 package com.main.movie.model;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigInteger;
 
 @RequiredArgsConstructor
 @Getter
 @Setter
 public class MovieDetail {
-    private Integer id;
+    private int id;
     private String poster_path;
     private String release_date;
-    private BigInteger budget;
+    private float budget;
+    private String overview;
+    private float vote_average;
 }
