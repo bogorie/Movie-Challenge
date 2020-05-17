@@ -7,7 +7,10 @@ import com.main.movie.util.SortOption;
 import io.vavr.API;
 import io.vavr.control.Option;
 import io.vavr.control.Try;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -19,11 +22,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static io.vavr.API.*;
 import static io.vavr.Patterns.$None;
 import static io.vavr.Patterns.$Some;
 import static io.vavr.Predicates.*;
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -31,6 +33,9 @@ public class MovieServiceImpl implements MovieService {
     private MovieDAO movieDAO;
     @Autowired
     private LinkDAO linkDAO;
+    @Autowired
+    private Environment env;
+    private Logger logger = LoggerFactory.getLogger(MovieServiceImpl.class);
 
     @Override
     public Optional<MovieDTO> getMovie(Integer movieId){
@@ -94,34 +99,28 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDetail getApiDetails(Integer movieId){
-        Optional<Integer> tmdbId = linkDAO.findTmdbId(movieId);
-
-        if(tmdbId.isPresent()){
+    public Option<MovieDetail> getApiDetails(Integer movieId){
+        Option<Integer> tmdbId = Option.ofOptional(linkDAO.findTmdbId(movieId));
+        return tmdbId.flatMap( theTmdbId -> {
             RestTemplate restTemplate = new RestTemplate();
 
-            String host = "https://api.themoviedb.org/3/movie/";
-            String apiKey = "?api_key=16a34aee6285afd1a01796ab3a6a45bb";
-            String uri = host + tmdbId.get().toString() + apiKey;
+            String host = env.getProperty("api.host");
+            String apiKey = env.getProperty("api.key");
+            String uri = host + theTmdbId.toString() + apiKey;
 
-            try {
-                MovieDetail movieDetail = restTemplate.getForObject(uri, MovieDetail.class);
-                if (movieDetail != null) {
-                    String poster_path = "";
-                    if (movieDetail.getPoster_path() != null)
-                        poster_path = "https://image.tmdb.org/t/p/w500" + movieDetail.getPoster_path();
-                    movieDetail.setPoster_path(poster_path);
-
-                    return movieDetail;
-                }
-            } catch (HttpClientErrorException e) {
-                if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                    return new MovieDetail();
-                }
-                throw e;
-            }
-        }
-        return new MovieDetail();
+            Try<MovieDetail> movieDetailTry = Try.of( () -> restTemplate.getForObject(uri, MovieDetail.class))
+                    .map( movieDetail -> {
+                        if(movieDetail != null) {
+                            String poster_path = "";
+                            if (movieDetail.getPoster_path() != null)
+                                poster_path = env.getProperty("api.poster.path") + movieDetail.getPoster_path();
+                            movieDetail.setPoster_path(poster_path);
+                        }
+                        return movieDetail;
+                        });
+            if(movieDetailTry.isFailure()) logger.error(movieDetailTry.getCause().toString());
+            return movieDetailTry.toOption();
+        });
     }
 
     @Override
@@ -134,49 +133,45 @@ public class MovieServiceImpl implements MovieService {
         List<MovieDTO> movieDTOList = this.getMoviesFromDB(sort, genres, limit, page, title);
 
         for(MovieDTO m : movieDTOList){
-            MovieDetail movieDetail = getApiDetails(m.getMovieId());
-
-            Response response = new Response(m.getMovieId(), m.getTitle(), m.getGenres(), movieDetail.getVote_average(),
-                    movieDetail.getPoster_path(), movieDetail.getRelease_date(), movieDetail.getBudget(), movieDetail.getOverview());
-            responseList.add(response);
+            getApiDetails(m.getMovieId())
+                    .map( movieDetail -> {
+                        Response response = new Response(m.getMovieId(), m.getTitle(), m.getGenres(), movieDetail.getVote_average(),
+                                        movieDetail.getPoster_path(), movieDetail.getRelease_date(), movieDetail.getBudget(), movieDetail.getOverview());
+                        responseList.add(response);
+                        return movieDetail;
+                    });
         }
-
         return responseList;
     }
 
     @Override
-    public CreditDTO getApiCast(Integer movieId){
-        Optional<Integer> tmdbId = linkDAO.findTmdbId(movieId);
-
-        if(tmdbId.isPresent()){
+    public Option<CreditDTO> getApiCast(Integer movieId){
+        Option<Integer> tmdbId = Option.ofOptional(linkDAO.findTmdbId(movieId));
+        return tmdbId.flatMap( TheTmdbId -> {
             RestTemplate restTemplate = new RestTemplate();
 
-            String host = "https://api.themoviedb.org/3/movie/";
-            String apiKey = "?api_key=16a34aee6285afd1a01796ab3a6a45bb";
-            String uri = host + tmdbId.get().toString() + "/credits" + apiKey;
+            String host = env.getProperty("api.host");
+            String apiKey = env.getProperty("api.key");
+            String uri = host + TheTmdbId.toString() + "/credits" + apiKey;
 
-            try {
-                CreditDTO creditDTO = restTemplate.getForObject(uri, CreditDTO.class);
-                if (creditDTO != null) {
-                    for (CastDTO castDTO : creditDTO.getCast()) {
-                        if (castDTO.getCharacter() != null) {
-                            String profile_path = "";
-                            if (castDTO.getProfile_path() != null)
-                                profile_path = "https://image.tmdb.org/t/p/w500" + castDTO.getProfile_path();
-                            castDTO.setProfile_path(profile_path);
-                        } else
-                            creditDTO.getCast().remove(castDTO);
-                    }
-                    return creditDTO;
-                }
-            } catch (HttpClientErrorException e) {
-                if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                    return new CreditDTO();
-                }
-                throw e;
-            }
-        }
+            Try<CreditDTO> creditDTOTry =  Try.of( () -> restTemplate.getForObject(uri, CreditDTO.class))
+                    .map( creditDTO -> {
+                        if (creditDTO != null) {
+                            for (CastDTO castDTO : creditDTO.getCast()) {
+                                if (castDTO.getCharacter() != null) {
+                                    String profile_path = "";
+                                    if (castDTO.getProfile_path() != null)
+                                        profile_path = env.getProperty("api.poster.path") + castDTO.getProfile_path();
+                                    castDTO.setProfile_path(profile_path);
+                                } else
+                                    creditDTO.getCast().remove(castDTO);
+                            }
+                        }
+                        return creditDTO;
+                    });
+            if(creditDTOTry.isFailure()) logger.error(creditDTOTry.getCause().toString());
+            return creditDTOTry.toOption();
+        } );
 
-        return new CreditDTO();
     }
 }

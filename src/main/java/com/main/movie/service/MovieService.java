@@ -19,7 +19,7 @@ public interface MovieService {
                                    Optional<Integer> page,
                                    Optional<String> title);
 
-    MovieDetail getApiDetails(Integer movieId);
+    Option<MovieDetail> getApiDetails(Integer movieId);
 
     List<Response> getMoviesData(Optional<String> sort,
                                  Optional<String> genres,
@@ -27,6 +27,6 @@ public interface MovieService {
                                  Optional<Integer> page,
                                  Optional<String> title);
 
-    CreditDTO getApiCast(Integer movieId);
+    Option<CreditDTO> getApiCast(Integer movieId);
 
 }
