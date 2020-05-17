@@ -1,5 +1,7 @@
 package com.main.movie.service;
 
+import com.main.movie.error.ResourceNotFound;
+import com.main.movie.integration.TheMovieDataBaseAPI;
 import com.main.movie.model.*;
 import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
@@ -10,22 +12,24 @@ import io.vavr.control.Try;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static io.vavr.API.*;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
 import static io.vavr.Patterns.$None;
 import static io.vavr.Patterns.$Some;
-import static io.vavr.Predicates.*;
+import static io.vavr.Predicates.is;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -35,15 +39,19 @@ public class MovieServiceImpl implements MovieService {
     private LinkDAO linkDAO;
     @Autowired
     private Environment env;
+
+    @Autowired
+    private TheMovieDataBaseAPI theMovieDataBaseAPI;
     private Logger logger = LoggerFactory.getLogger(MovieServiceImpl.class);
 
     @Override
-    public Optional<MovieDTO> getMovie(Integer movieId){
-        return  movieDAO.findById(movieId);
+    public Mono<MovieDTO> getMovie(Integer movieId){
+        Optional<MovieDTO> result = movieDAO.findById(movieId);
+        return result.map(Mono::just).orElseGet(() -> Mono.error( new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
     }
 
     @Override
-    public List<MovieDTO> getMoviesFromDB(Optional<String> sort,
+    public Flux<MovieDTO> getMoviesFromDB(Optional<String> sort,
                                           Optional<String> genres,
                                           Optional<Integer> limit,
                                           Optional<Integer> page,
@@ -66,23 +74,23 @@ public class MovieServiceImpl implements MovieService {
           Case($None(), findAllMovies(genres,limit,title,start)));
     }
 
-    private List<MovieDTO> findAllMovies(Optional<String> genres,
+    private Flux<MovieDTO> findAllMovies(Optional<String> genres,
                                          Optional<Integer> limit,
                                          Optional<String> title,
                                          int start){
-        return movieDAO.findAll().stream()
+        return Flux.fromIterable(movieDAO.findAll().stream()
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                 .filter(f -> !genres.isPresent() || f.getGenres().toLowerCase().contains(genres.get().toLowerCase()))
                 .skip(start)
                 .limit(limit.orElse(10))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
-    private List<MovieDTO> findAllMoviesSortByTitle(Optional<String> genres,
+    private Flux<MovieDTO> findAllMoviesSortByTitle(Optional<String> genres,
                                                     Optional<Integer> limit,
                                                     Optional<String> title,
                                                     int start){
-        return movieDAO.findAll().stream()
+        return Flux.fromIterable(movieDAO.findAll().stream()
                 .sorted(Comparator.comparing(MovieDTO::getTitle))
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                 .filter(f -> {
@@ -95,20 +103,18 @@ public class MovieServiceImpl implements MovieService {
                 })
                 .skip(start)
                 .limit(limit.orElse(10))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     @Override
-    public Option<MovieDetail> getApiDetails(Integer movieId){
+    public Mono<MovieDetail> getApiDetails(Integer movieId){
         Option<Integer> tmdbId = Option.ofOptional(linkDAO.findTmdbId(movieId));
-        return tmdbId.flatMap( theTmdbId -> {
-            RestTemplate restTemplate = new RestTemplate();
+        return tmdbId.map( theTmdbId -> {
 
-            String host = env.getProperty("api.host");
             String apiKey = env.getProperty("api.key");
-            String uri = host + theTmdbId.toString() + apiKey;
-
-            Try<MovieDetail> movieDetailTry = Try.of( () -> restTemplate.getForObject(uri, MovieDetail.class))
+            String uri = theTmdbId.toString() + apiKey;
+            return theMovieDataBaseAPI.call(HttpMethod.GET,uri)
+                    .bodyToMono( new ParameterizedTypeReference<MovieDetail>(){})
                     .map( movieDetail -> {
                         if(movieDetail != null) {
                             String poster_path = "";
@@ -118,34 +124,32 @@ public class MovieServiceImpl implements MovieService {
                         }
                         return movieDetail;
                         });
-            if(movieDetailTry.isFailure()) logger.error(movieDetailTry.getCause().toString());
-            return movieDetailTry.toOption();
-        });
+        }).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
     }
 
     @Override
-    public List<Response> getMoviesData(Optional<String> sort,
+    public Flux<Response> getMoviesData(Optional<String> sort,
                                         Optional<String> genres,
                                         Optional<Integer> limit,
                                         Optional<Integer> page,
                                         Optional<String> title){
         List<Response> responseList = new ArrayList<>();
-        List<MovieDTO> movieDTOList = this.getMoviesFromDB(sort, genres, limit, page, title);
-
-        for(MovieDTO m : movieDTOList){
-            getApiDetails(m.getMovieId())
-                    .map( movieDetail -> {
-                        Response response = new Response(m.getMovieId(), m.getTitle(), m.getGenres(), movieDetail.getVote_average(),
-                                        movieDetail.getPoster_path(), movieDetail.getRelease_date(), movieDetail.getBudget(), movieDetail.getOverview());
-                        responseList.add(response);
-                        return movieDetail;
-                    });
-        }
-        return responseList;
+        getMoviesFromDB(sort, genres, limit, page, title)
+                .map( movieDTO -> {
+                    getApiDetails(movieDTO.getMovieId())
+                            .map( movieDetail -> {
+                                Response response = new Response(movieDTO.getMovieId(), movieDTO.getTitle(), movieDTO.getGenres(), movieDetail.getVote_average(),
+                                                movieDetail.getPoster_path(), movieDetail.getRelease_date(), movieDetail.getBudget(), movieDetail.getOverview());
+                                responseList.add(response);
+                                return movieDetail;
+                            });
+                    return movieDTO;
+                });
+        return Flux.fromIterable(responseList);
     }
 
     @Override
-    public Option<CreditDTO> getApiCast(Integer movieId){
+    public Mono<CreditDTO> getApiCast(Integer movieId){
         Option<Integer> tmdbId = Option.ofOptional(linkDAO.findTmdbId(movieId));
         return tmdbId.flatMap( TheTmdbId -> {
             RestTemplate restTemplate = new RestTemplate();
@@ -171,7 +175,7 @@ public class MovieServiceImpl implements MovieService {
                     });
             if(creditDTOTry.isFailure()) logger.error(creditDTOTry.getCause().toString());
             return creditDTOTry.toOption();
-        } );
-
+        })
+                .map(Mono::just).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
     }
 }
