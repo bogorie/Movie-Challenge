@@ -1,31 +1,46 @@
 package com.main.movie.controller;
 
+import com.main.movie.error.ResourceNotFound;
 import com.main.movie.model.*;
 import com.main.movie.service.MovieService;
+import com.main.movie.service.MovieServiceImpl;
+import com.main.movie.util.SortOption;
+import io.vavr.control.Option;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
+@RequestMapping(path="/api")
 @RestController
 public class MovieController {
+    private MovieService movieService;
+
     @Autowired
-    MovieService movieService;
+    public MovieController(MovieServiceImpl movieServiceImp){
+        movieService = movieServiceImp;
+    }
 
     @GetMapping("/movie/{movie_id}")
     public MovieDTO getMovie(@PathVariable Integer movie_id) {
-        return movieService.getMovie(movie_id);
+        Optional<MovieDTO> result = movieService.getMovie(movie_id);
+        if( result.isPresent())
+            return result.get();
+        else
+            throw new ResourceNotFound("The movie with id "+movie_id+" doesn't exist");
+
     }
 
     @GetMapping("/movie/detail/{movie_id}")
-    public MovieDetail getdetails(@PathVariable Integer movie_id) { return movieService.getApiDetails(movie_id); }
+    public MovieDetail getdetails(@PathVariable Integer movie_id) {
+        return movieService.getApiDetails(movie_id);
+    }
 
     @GetMapping("/movie/casts/{movie_id}")
-    public CreditDTO getApiCast(@PathVariable Integer movie_id) { return movieService.getApiCast(movie_id); }
+    public CreditDTO getApiCast(@PathVariable Integer movie_id) {
+        return movieService.getApiCast(movie_id);
+    }
 
     @GetMapping("/moviesDB")
     public List<MovieDTO> getMovies(@RequestParam(required = false) Optional<String> sort,
