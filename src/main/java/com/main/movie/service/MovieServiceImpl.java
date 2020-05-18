@@ -2,7 +2,10 @@ package com.main.movie.service;
 
 import com.main.movie.error.ResourceNotFound;
 import com.main.movie.integration.TheMovieDataBaseAPI;
-import com.main.movie.model.*;
+import com.main.movie.model.CreditDTO;
+import com.main.movie.model.MovieDTO;
+import com.main.movie.model.MovieDetail;
+import com.main.movie.model.MovieResponse;
 import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
 import com.main.movie.util.SortOption;
@@ -16,13 +19,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import static io.vavr.API.$;
@@ -116,66 +115,57 @@ public class MovieServiceImpl implements MovieService {
             return theMovieDataBaseAPI.call(HttpMethod.GET,uri)
                     .bodyToMono( new ParameterizedTypeReference<MovieDetail>(){})
                     .map( movieDetail -> {
-                        if(movieDetail != null) {
                             String poster_path = "";
                             if (movieDetail.getPoster_path() != null)
                                 poster_path = env.getProperty("api.poster.path") + movieDetail.getPoster_path();
                             movieDetail.setPoster_path(poster_path);
-                        }
                         return movieDetail;
                         });
         }).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
     }
 
     @Override
-    public Flux<Response> getMoviesData(Optional<String> sort,
-                                        Optional<String> genres,
-                                        Optional<Integer> limit,
-                                        Optional<Integer> page,
-                                        Optional<String> title){
-        List<Response> responseList = new ArrayList<>();
-        getMoviesFromDB(sort, genres, limit, page, title)
-                .map( movieDTO -> {
-                    getApiDetails(movieDTO.getMovieId())
-                            .map( movieDetail -> {
-                                Response response = new Response(movieDTO.getMovieId(), movieDTO.getTitle(), movieDTO.getGenres(), movieDetail.getVote_average(),
-                                                movieDetail.getPoster_path(), movieDetail.getRelease_date(), movieDetail.getBudget(), movieDetail.getOverview());
-                                responseList.add(response);
-                                return movieDetail;
-                            });
-                    return movieDTO;
-                });
-        return Flux.fromIterable(responseList);
+    public Flux<MovieResponse> getMoviesData(Optional<String> sort,
+                                             Optional<String> genres,
+                                             Optional<Integer> limit,
+                                             Optional<Integer> page,
+                                             Optional<String> title){
+        return getMoviesFromDB(sort, genres, limit, page, title)
+                .flatMap( movieDTO ->
+                      getApiDetails(movieDTO.getMovieId())
+                            .map( movieDetail -> new MovieResponse(
+                                    movieDTO.getMovieId(),
+                                    movieDTO.getTitle(),
+                                    movieDTO.getGenres(),
+                                    movieDetail.getVote_average(),
+                                    movieDetail.getPoster_path(),
+                                    movieDetail.getRelease_date(),
+                                    movieDetail.getBudget(),
+                                    movieDetail.getOverview()))
+                            .onErrorResume( RuntimeException.class, __ ->  Mono.empty())
+                );
     }
 
     @Override
     public Mono<CreditDTO> getApiCast(Integer movieId){
         Option<Integer> tmdbId = Option.ofOptional(linkDAO.findTmdbId(movieId));
-        return tmdbId.flatMap( TheTmdbId -> {
-            RestTemplate restTemplate = new RestTemplate();
+        return tmdbId.map( theTmdbId -> {
 
-            String host = env.getProperty("api.host");
             String apiKey = env.getProperty("api.key");
-            String uri = host + TheTmdbId.toString() + "/credits" + apiKey;
-
-            Try<CreditDTO> creditDTOTry =  Try.of( () -> restTemplate.getForObject(uri, CreditDTO.class))
+            String uri = theTmdbId.toString() + "/credits" + apiKey;
+            return theMovieDataBaseAPI.call(HttpMethod.GET,uri)
+                    .bodyToMono( new ParameterizedTypeReference<CreditDTO>(){})
                     .map( creditDTO -> {
-                        if (creditDTO != null) {
-                            for (CastDTO castDTO : creditDTO.getCast()) {
+                            creditDTO.getCast().stream().forEach( castDTO -> {
                                 if (castDTO.getCharacter() != null) {
                                     String profile_path = "";
                                     if (castDTO.getProfile_path() != null)
                                         profile_path = env.getProperty("api.poster.path") + castDTO.getProfile_path();
                                     castDTO.setProfile_path(profile_path);
-                                } else
-                                    creditDTO.getCast().remove(castDTO);
-                            }
-                        }
-                        return creditDTO;
+                                }else creditDTO.getCast().remove(castDTO);
+                            });
+                            return creditDTO;
                     });
-            if(creditDTOTry.isFailure()) logger.error(creditDTOTry.getCause().toString());
-            return creditDTOTry.toOption();
-        })
-                .map(Mono::just).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
+        }).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
     }
 }

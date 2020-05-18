@@ -3,7 +3,7 @@ package com.main.movie.controller;
 import com.main.movie.model.CreditDTO;
 import com.main.movie.model.MovieDTO;
 import com.main.movie.model.MovieDetail;
-import com.main.movie.model.Response;
+import com.main.movie.model.MovieResponse;
 import com.main.movie.service.MovieService;
 import com.main.movie.service.MovieServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Optional;
 
 @RequestMapping(path="/api")
@@ -50,11 +49,11 @@ public class MovieController {
     }
 
     @GetMapping("/movies")
-    public Flux<Response> getData(@RequestParam(required = false) Optional<String> sort,
-                                  @RequestParam(required = false) Optional<String> genres,
-                                  @RequestParam(required = false) Optional<Integer> limit,
-                                  @RequestParam(required = false) Optional<Integer> page,
-                                  @RequestParam(required = false) Optional<String> title){
+    public Flux<MovieResponse> getData(@RequestParam(required = false) Optional<String> sort,
+                                       @RequestParam(required = false) Optional<String> genres,
+                                       @RequestParam(required = false) Optional<Integer> limit,
+                                       @RequestParam(required = false) Optional<Integer> page,
+                                       @RequestParam(required = false) Optional<String> title){
         return movieService.getMoviesData(sort, genres, limit, page, title);
     }
 
