@@ -56,8 +56,8 @@ public class MovieServiceImpl implements MovieService {
                                           Optional<Integer> page,
                                           Optional<String> title){
         int start = page.orElse(1);
-        if (start != 0 && start != 1) start += limit.orElse(10);
-        else start = 0;
+        if (start == 0 || start == 1) start = 0;
+        else start = (start-1) * limit.orElse(10);
 
         Option<SortOption> sortOption = Option.none();
         Try<SortOption> optionParam = Try.of( () -> SortOption.valueOf(sort.get().toUpperCase()));
