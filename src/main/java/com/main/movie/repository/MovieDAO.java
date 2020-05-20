@@ -29,13 +29,4 @@ public class MovieDAO implements MovieDAOInterface{
         return moviesRepository.findById(id);
     }
 
-    @Override
-    public Iterable<MovieDTO> findAllOrderByTitle(){
-        return moviesRepository.findAllOrderByTitle();
-    }
-
-    @Override
-    public List<MovieDTO> findByPage(Integer start, Integer limit){
-        return (List<MovieDTO>) moviesRepository.findByPage(start, limit);
-    }
 }

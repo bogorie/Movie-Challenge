@@ -3,6 +3,7 @@ package com.main.movie.service;
 import com.main.movie.MockGenerator;
 import com.main.movie.model.MovieDTO;
 import com.main.movie.model.RatingDTO;
+import com.main.movie.repository.LinkRepository;
 import com.main.movie.repository.MoviesRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,22 +26,39 @@ class MovieServiceImplTest {
     @MockBean
     private MoviesRepository moviesRepository;
 
+    @MockBean
+    private LinkRepository linkRepository;
+
+    private int mockMovieId;
+
+
     @BeforeEach
     void setMoviesRepository(){
+        this.mockMovieId = 650;
+
         Mockito.when(moviesRepository.findAll())
                 .thenReturn(MockGenerator.getMockMovies());
         Mockito.when(moviesRepository.findById(MockGenerator.getMockMovie().get().getMovieId()))
                 .thenReturn(MockGenerator.getMockMovie());
+
+        Mockito.when(linkRepository.findTmdbId(1))
+                .thenReturn(MockGenerator.getMockTmdbId());
     }
 
     @Test
     void getMovie() {
         Set<RatingDTO> ratingDTOMock = new HashSet<>();
-        MovieDTO result = new MovieDTO(650, "movie1", "genre1|genre2", ratingDTOMock);
+        MovieDTO result = new MovieDTO(mockMovieId, "movie1", "genre1|genre2", ratingDTOMock);
 
-        Mono<MovieDTO> movie = movieService.getMovie(650);
+        Mono<MovieDTO> movie = movieService.getMovie(mockMovieId);
         assertNotNull(movie);
         assertEquals(movie.block().getMovieId(), result.getMovieId());
+    }
+
+    @Test
+    void getMovieNotFound() {
+        Mono<MovieDTO> movie = movieService.getMovie(1);
+        assertEquals(movie.toString(), "MonoError");
     }
 
     @Test
