@@ -30,7 +30,7 @@ public class MovieController {
     }
 
     @GetMapping("/movie/detail/{movie_id}")
-    public Mono<MovieDetail> getdetails(@PathVariable Integer movie_id) {
+    public Mono<MovieDetail> getMovieDetails(@PathVariable Integer movie_id) {
         return movieService.getApiDetails(movie_id);
     }
 
@@ -49,11 +49,11 @@ public class MovieController {
     }
 
     @GetMapping("/movies")
-    public Flux<MovieResponse> getData(@RequestParam(required = false) Optional<String> sort,
-                                       @RequestParam(required = false) Optional<String> genres,
-                                       @RequestParam(required = false) Optional<Integer> limit,
-                                       @RequestParam(required = false) Optional<Integer> page,
-                                       @RequestParam(required = false) Optional<String> title){
+    public Flux<MovieResponse> getMovieData(@RequestParam(required = false) Optional<String> sort,
+                                            @RequestParam(required = false) Optional<String> genres,
+                                            @RequestParam(required = false) Optional<Integer> limit,
+                                            @RequestParam(required = false) Optional<Integer> page,
+                                            @RequestParam(required = false) Optional<String> title){
         return movieService.getMoviesData(sort, genres, limit, page, title);
     }
 

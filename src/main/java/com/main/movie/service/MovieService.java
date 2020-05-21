@@ -26,5 +26,4 @@ public interface MovieService {
                                       Optional<String> title);
 
     Mono<CreditDTO> getApiCast(Integer movieId);
-
 }

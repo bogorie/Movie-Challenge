@@ -1,11 +1,9 @@
 package com.main.movie.model;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @RequiredArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 @ToString

@@ -40,7 +40,8 @@ public class MovieServiceImpl implements MovieService {
     private Environment env;
 
     @Autowired
-    private TheMovieDataBaseAPI theMovieDataBaseAPI;
+    private TheMovieDataBaseAPI theMovieDataBaseAPIImpl;
+
     private Logger logger = LoggerFactory.getLogger(MovieServiceImpl.class);
 
     @Override
@@ -56,8 +57,8 @@ public class MovieServiceImpl implements MovieService {
                                           Optional<Integer> page,
                                           Optional<String> title){
         int start = page.orElse(1);
-        if (start != 0 && start != 1) start += limit.orElse(10);
-        else start = 0;
+        if (start == 0 || start == 1) start = 0;
+        else start = (start-1) * limit.orElse(10);
 
         Option<SortOption> sortOption = Option.none();
         Try<SortOption> optionParam = Try.of( () -> SortOption.valueOf(sort.get().toUpperCase()));
@@ -112,7 +113,7 @@ public class MovieServiceImpl implements MovieService {
 
             String apiKey = env.getProperty("api.key");
             String uri = theTmdbId.toString() + apiKey;
-            return theMovieDataBaseAPI.call(HttpMethod.GET,uri)
+            return theMovieDataBaseAPIImpl.call(HttpMethod.GET,uri)
                     .bodyToMono( new ParameterizedTypeReference<MovieDetail>(){})
                     .map( movieDetail -> {
                             String poster_path = "";
@@ -153,7 +154,7 @@ public class MovieServiceImpl implements MovieService {
 
             String apiKey = env.getProperty("api.key");
             String uri = theTmdbId.toString() + "/credits" + apiKey;
-            return theMovieDataBaseAPI.call(HttpMethod.GET,uri)
+            return theMovieDataBaseAPIImpl.call(HttpMethod.GET,uri)
                     .bodyToMono( new ParameterizedTypeReference<CreditDTO>(){})
                     .map( creditDTO -> {
                             creditDTO.getCast().stream().forEach( castDTO -> {
