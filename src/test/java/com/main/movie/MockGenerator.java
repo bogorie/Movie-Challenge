@@ -1,7 +1,6 @@
 package com.main.movie;
 
 import com.main.movie.model.*;
-import reactor.core.publisher.Mono;
 
 import java.util.*;
 
@@ -40,7 +39,7 @@ public class MockGenerator {
     }
 
     public static Optional<Integer> getMockTmdbId(){
-        return Optional.of(100);
+        return Optional.ofNullable(862);
     }
 
     public static Optional<MovieDetail> getMockMovieDetail(){
@@ -54,6 +53,24 @@ public class MockGenerator {
         CreditDTO creditDTO = new CreditDTO(1, castDTOList);
 
         return Optional.of(creditDTO);
+    }
+
+    public static MovieDetail getResultMovieDetail(){
+        return new MovieDetail(862,
+                "https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
+                "1995-10-30",
+                30000000,
+                "Led by Woody, Andy's toys live happily in his room until Andy's birthday brings Buzz Lightyear onto the scene. Afraid of losing his place in Andy's heart, Woody plots against Buzz. But when circumstances separate Buzz and Woody from their owner, the duo eventually learns to put aside their differences.",
+                (float) 7.9);
+    }
+
+    public static CreditDTO getMockCredit(){
+        List<CastDTO> castList = new ArrayList<>();
+        castList.add( new CastDTO(14, "Woody (voice)", "Tom Hanks", "https://image.tmdb.org/t/p/w500/2gY92j2lkNHL2cThBhPmgXLd5PL.jpg") );
+        castList.add( new CastDTO(15, "Buzz Lightyear (voice)", "Tim Allen", "") );
+
+        CreditDTO credit = new CreditDTO(862, castList);
+        return credit;
     }
 
 }
