@@ -2,10 +2,7 @@ package com.main.movie.service;
 
 import com.main.movie.error.ResourceNotFound;
 import com.main.movie.integration.TheMovieDataBaseAPI;
-import com.main.movie.model.CreditDTO;
-import com.main.movie.model.MovieDTO;
-import com.main.movie.model.MovieDetail;
-import com.main.movie.model.MovieResponse;
+import com.main.movie.model.*;
 import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
 import com.main.movie.util.SortOption;
@@ -21,9 +18,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.util.Comparator;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.stream.Collectors;
+
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.Patterns.$None;
@@ -168,5 +166,15 @@ public class MovieServiceImpl implements MovieService {
                             return creditDTO;
                     });
         }).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
+    }
+
+    @Override
+    public Mono<GenreResponse> getMoviesGenres() {
+        return Mono.just(movieDAO.findAllGenres()
+                    .stream()
+                    .flatMap( genres ->  Arrays.stream(genres.split("\\|")))
+                    .sorted()
+                    .collect(Collectors.toCollection(LinkedHashSet::new)))
+                .map(GenreResponse::new);
     }
 }

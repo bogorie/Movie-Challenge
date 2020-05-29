@@ -1,9 +1,6 @@
 package com.main.movie.service;
 
-import com.main.movie.model.CreditDTO;
-import com.main.movie.model.MovieDTO;
-import com.main.movie.model.MovieDetail;
-import com.main.movie.model.MovieResponse;
+import com.main.movie.model.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -26,4 +23,6 @@ public interface MovieService {
                                       Optional<String> title);
 
     Mono<CreditDTO> getApiCast(Integer movieId);
+
+    Mono<GenreResponse> getMoviesGenres();
 }

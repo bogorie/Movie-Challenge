@@ -1,9 +1,6 @@
 package com.main.movie.controller;
 
-import com.main.movie.model.CreditDTO;
-import com.main.movie.model.MovieDTO;
-import com.main.movie.model.MovieDetail;
-import com.main.movie.model.MovieResponse;
+import com.main.movie.model.*;
 import com.main.movie.service.MovieService;
 import com.main.movie.service.MovieServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,4 +54,8 @@ public class MovieController {
         return movieService.getMoviesData(sort, genres, limit, page, title);
     }
 
+    @GetMapping("/movies/genres")
+    public Mono<GenreResponse> getMoviesGenres(){
+        return movieService.getMoviesGenres();
+    }
 }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class MovieDAO implements MovieDAOInterface{
@@ -27,6 +28,11 @@ public class MovieDAO implements MovieDAOInterface{
     @Override
     public Optional<MovieDTO> findById(Integer id) {
         return moviesRepository.findById(id);
+    }
+
+    @Override
+    public Set<String> findAllGenres() {
+        return moviesRepository.findAllGenres();
     }
 
 }
