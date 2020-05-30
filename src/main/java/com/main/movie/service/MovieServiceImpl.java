@@ -5,6 +5,8 @@ import com.main.movie.integration.TheMovieDataBaseAPI;
 import com.main.movie.model.*;
 import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
+import com.main.movie.repository.RatingDAO;
+import com.main.movie.repository.RatingRepository;
 import com.main.movie.util.SortOption;
 import io.vavr.API;
 import io.vavr.control.Option;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.persistence.criteria.CriteriaBuilder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +38,8 @@ public class MovieServiceImpl implements MovieService {
     @Autowired
     private LinkDAO linkDAO;
     @Autowired
+    private RatingDAO ratingDAO;
+    @Autowired
     private Environment env;
 
     @Autowired
@@ -49,11 +54,14 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public Flux<MovieDTO> getMoviesFromDB(Optional<String> sort,
+    public Flux<MovieDBResponse> getMoviesFromDB(Optional<String> sort,
                                           Optional<String> genres,
                                           Optional<Integer> limit,
                                           Optional<Integer> page,
                                           Optional<String> title){
+
+        LinkedHashMap<Integer,Float> averageRating = ratingDAO.findAverageRatings();
+
         int start = page.orElse(1);
         if (start == 0 || start == 1) start = 0;
         else start = (start-1) * limit.orElse(10);
@@ -67,16 +75,24 @@ public class MovieServiceImpl implements MovieService {
         return API.Match(sortOption).of(
           Case($Some($()), value ->
                   API.Match(value).of(
-                          Case($(is(SortOption.TITLE)),findAllMoviesSortByTitle(genres,limit,title, finalStart)),
-                          Case($(),findAllMovies(genres,limit,title, finalStart)))),
-          Case($None(), findAllMovies(genres,limit,title,start)));
+                          Case($(is(SortOption.TITLE)),findAllMoviesSortByTitle(genres,limit,title, finalStart,averageRating)),
+                          Case($(),findAllMovies(genres,limit,title, finalStart,averageRating)))),
+          Case($None(), findAllMovies(genres,limit,title,start,averageRating)));
     }
 
-    private Flux<MovieDTO> findAllMovies(Optional<String> genres,
+    private Flux<MovieDBResponse> findAllMovies(Optional<String> genres,
                                          Optional<Integer> limit,
                                          Optional<String> title,
-                                         int start){
+                                         int start,
+                                         LinkedHashMap<Integer,Float> averageRating){
         return Flux.fromIterable(movieDAO.findAll().stream()
+                .map( movieDTO ->
+                        new MovieDBResponse(
+                                movieDTO.getMovieId(),
+                                movieDTO.getTitle(),
+                                movieDTO.getGenres(),
+                                averageRating.get(movieDTO.getMovieId())
+                        ))
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                 .filter(f -> !genres.isPresent() || f.getGenres().toLowerCase().contains(genres.get().toLowerCase()))
                 .skip(start)
@@ -84,12 +100,20 @@ public class MovieServiceImpl implements MovieService {
                 .collect(Collectors.toList()));
     }
 
-    private Flux<MovieDTO> findAllMoviesSortByTitle(Optional<String> genres,
+    private Flux<MovieDBResponse> findAllMoviesSortByTitle(Optional<String> genres,
                                                     Optional<Integer> limit,
                                                     Optional<String> title,
-                                                    int start){
+                                                    int start,
+                                                    LinkedHashMap<Integer,Float> averageRating){
         return Flux.fromIterable(movieDAO.findAll().stream()
-                .sorted(Comparator.comparing(MovieDTO::getTitle))
+                .map( movieDTO ->
+                     new MovieDBResponse(
+                            movieDTO.getMovieId(),
+                            movieDTO.getTitle(),
+                            movieDTO.getGenres(),
+                            averageRating.get(movieDTO.getMovieId())
+                     ))
+                .sorted(Comparator.comparing(MovieDBResponse::getTitle))
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                 .filter(f -> {
                     if (!genres.isPresent())

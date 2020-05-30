@@ -10,13 +10,23 @@ public class MockGenerator {
         return Optional.of( new MovieDTO(650, "movie1", "genre1|genre2", ratingDTOMock) );
     }
 
-    public static List<MovieDTO> getMockMovies(){
+    public static List<MovieDTO> getMockMoviesDTO(){
         List<MovieDTO> movieListMock = new ArrayList<>();
         Set<RatingDTO> ratingDTOMock = new HashSet<>();
         for(int i=0; i<5; i++)
-            movieListMock.add( new MovieDTO(i, i+":movie", "genre"+i, ratingDTOMock) );
+            movieListMock.add( new MovieDTO(i, i+":movie", "genre"+i, ratingDTOMock ));
         for(int i=5; i<10; i++)
-            movieListMock.add( new MovieDTO(i, i+":dummy", "dummy"+i, ratingDTOMock) );
+            movieListMock.add( new MovieDTO(i, i+":dummy", "dummy"+i,  ratingDTOMock));
+        return movieListMock;
+    }
+
+    public static List<MovieDBResponse> getMockMovies(){
+        List<MovieDBResponse> movieListMock = new ArrayList<>();
+        Set<RatingDTO> ratingDTOMock = new HashSet<>();
+        for(int i=0; i<5; i++)
+            movieListMock.add( new MovieDBResponse(i, i+":movie", "genre"+i, (float) 1.0) );
+        for(int i=5; i<10; i++)
+            movieListMock.add( new MovieDBResponse(i, i+":dummy", "dummy"+i,  (float) 1.0) );
         return movieListMock;
     }
 

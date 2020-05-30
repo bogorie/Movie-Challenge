@@ -21,7 +21,6 @@ public class RatingDTO {
     private Integer userId;
 
     @ManyToOne
-    @JoinColumn(name="movie_id", nullable=false)
     private MovieDTO movie;
 
     private Float rating;

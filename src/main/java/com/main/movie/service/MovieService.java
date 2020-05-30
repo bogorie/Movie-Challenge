@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface MovieService {
     Mono<MovieDTO> getMovie(Integer movieId);
-    Flux<MovieDTO> getMoviesFromDB(Optional<String> sort,
+    Flux<MovieDBResponse> getMoviesFromDB(Optional<String> sort,
                                    Optional<String> genres,
                                    Optional<Integer> limit,
                                    Optional<Integer> page,
