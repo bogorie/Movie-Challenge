@@ -43,7 +43,7 @@ class MovieServiceImplTest {
         this.mockMovieId = 650;
 
         Mockito.when(moviesRepository.findAll())
-                .thenReturn(MockGenerator.getMockMovies());
+                .thenReturn(MockGenerator.getMockMoviesDTO());
         Mockito.when(moviesRepository.findById(MockGenerator.getMockMovie().get().getMovieId()))
                 .thenReturn(MockGenerator.getMockMovie());
 
@@ -69,10 +69,10 @@ class MovieServiceImplTest {
 
     @Test
     void getMoviesFromDBNotQueryParam() {
-        List<MovieDTO> result = MockGenerator.getMockMovies();
+        List<MovieDBResponse> result = MockGenerator.getMockMovies();
 
-        Flux<MovieDTO> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        List<MovieDTO> moviesList = movies.toStream().collect(Collectors.toList());
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.toStream().collect(Collectors.toList());
 
         for(int i=0; i<result.size(); i++){
             assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
@@ -83,11 +83,11 @@ class MovieServiceImplTest {
     void getMoviesFromDBSortTitle() {
         Optional<String> sort = Optional.of("title");
 
-        List<MovieDTO> result = MockGenerator.getMockMovies();
-        result.sort(Comparator.comparing(MovieDTO::getTitle));
+        List<MovieDBResponse> result = MockGenerator.getMockMovies();
+        result.sort(Comparator.comparing(MovieDBResponse::getTitle));
 
-        Flux<MovieDTO> movies = movieService.getMoviesFromDB(sort, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
-        List<MovieDTO> moviesList = movies.collectList().block();
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sort, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
 
         for(int i=0; i<result.size(); i++){
             assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
@@ -102,8 +102,8 @@ class MovieServiceImplTest {
         List<MovieDTO> result = MockGenerator.movieWithFilter();
         result.sort(Comparator.comparing(MovieDTO::getTitle));
 
-        Flux<MovieDTO> movies = movieService.getMoviesFromDB(sort, genres, Optional.empty(), Optional.empty(), Optional.empty());
-        List<MovieDTO> moviesList = movies.collectList().block();
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sort, genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
 
         assertEquals(moviesList.size(), result.size());
         for(int i=0; i<result.size(); i++){
@@ -117,8 +117,8 @@ class MovieServiceImplTest {
 
         List<MovieDTO> result = MockGenerator.movieWithFilter();
 
-        Flux<MovieDTO> movies = movieService.getMoviesFromDB(Optional.empty(), genres, Optional.empty(), Optional.empty(), Optional.empty());
-        List<MovieDTO> moviesList = movies.collectList().block();
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
 
         assertEquals(moviesList.size(), result.size());
         for(int i=0; i<result.size(); i++){
@@ -131,10 +131,10 @@ class MovieServiceImplTest {
         Optional<Integer> limit = Optional.of(5);
         Optional<Integer> page = Optional.of(2);
 
-        List<MovieDTO> result = MockGenerator.getMockMovies();
+        List<MovieDBResponse> result = MockGenerator.getMockMovies();
 
-        Flux<MovieDTO> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), limit, page, Optional.empty());
-        List<MovieDTO> moviesList = movies.collectList().block();
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), limit, page, Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
 
         assertEquals(moviesList.size(), limit.get());
         for(int i=0; i<limit.get(); i++){
@@ -148,8 +148,8 @@ class MovieServiceImplTest {
 
         List<MovieDTO> result = MockGenerator.movieWithFilter();
 
-        Flux<MovieDTO> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), title);
-        List<MovieDTO> moviesList = movies.collectList().block();
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), title);
+        List<MovieDBResponse> moviesList = movies.collectList().block();
 
         for(int i=0; i<result.size(); i++){
             assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
@@ -171,7 +171,7 @@ class MovieServiceImplTest {
 
     @Test
     void getMoviesData() {
-        List<MovieDTO> resultList = MockGenerator.getMockMovies();
+        List<MovieDBResponse> resultList = MockGenerator.getMockMovies();
         MovieDetail resultDetail = MockGenerator.getResultMovieDetail();
 
         for(int i=0; i<10; i++)

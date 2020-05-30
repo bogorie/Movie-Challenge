@@ -1,10 +1,7 @@
 package com.main.movie.controller;
 
 import com.main.movie.MockGenerator;
-import com.main.movie.model.CreditDTO;
-import com.main.movie.model.MovieDTO;
-import com.main.movie.model.MovieDetail;
-import com.main.movie.model.MovieResponse;
+import com.main.movie.model.*;
 import com.main.movie.service.MovieServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,8 +91,8 @@ class MovieControllerTest {
 
     @Test
     void getMovies() throws Exception {
-        Mono<List<MovieDTO>> mono = Mono.just(MockGenerator.getMockMovies());
-        Flux<MovieDTO> movies = mono.flatMapMany(Flux::fromIterable);
+        Mono<List<MovieDBResponse>> mono = Mono.just(MockGenerator.getMockMovies());
+        Flux<MovieDBResponse> movies = mono.flatMapMany(Flux::fromIterable);
 
         BDDMockito.given(movieService.getMoviesFromDB(Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
                 .willReturn(movies);

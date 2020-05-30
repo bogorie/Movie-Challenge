@@ -37,7 +37,7 @@ public class MovieController {
     }
 
     @GetMapping("/moviesDB")
-    public Flux<MovieDTO> getMovies(@RequestParam(required = false) Optional<String> sort,
+    public Flux<MovieDBResponse> getMovies(@RequestParam(required = false) Optional<String> sort,
                                     @RequestParam(required = false) Optional<String> genres,
                                     @RequestParam(required = false) Optional<Integer> limit,
                                     @RequestParam(required = false) Optional<Integer> page,
