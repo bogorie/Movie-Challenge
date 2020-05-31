@@ -36,6 +36,11 @@ public class MovieController {
         return movieService.getApiCast(movie_id);
     }
 
+    @GetMapping("/movie/rating/{movie_id}")
+    public Mono<MovieRatingHistoryResponse> getMovieRatingHistory(@PathVariable Integer movie_id){
+        return movieService.getMovieRatingHistory(movie_id);
+    }
+
     @GetMapping("/moviesDB")
     public Flux<MovieDBResponse> getMovies(@RequestParam(required = false) Optional<String> sort,
                                     @RequestParam(required = false) Optional<String> genres,
