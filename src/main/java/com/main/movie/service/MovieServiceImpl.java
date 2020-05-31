@@ -158,7 +158,7 @@ public class MovieServiceImpl implements MovieService {
                                     movieDTO.getMovieId(),
                                     movieDTO.getTitle(),
                                     movieDTO.getGenres(),
-                                    movieDetail.getVote_average(),
+                                    movieDTO.getAverageRating(),
                                     movieDetail.getPoster_path(),
                                     movieDetail.getRelease_date(),
                                     movieDetail.getBudget(),
