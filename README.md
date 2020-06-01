@@ -33,9 +33,17 @@ Data extraction – organization and simple visualization
   
 5. Shows the actors of the movie using TMDB API query
   https://secret-atoll-56548.herokuapp.com/api/movie/casts/{movie_id} 
+ 
+6. Shows movie rating per years
+  https://secret-atoll-56548.herokuapp.com/api/movie/rating/{movie_id}
+  
+7. Shows all genres
+  https://secret-atoll-56548.herokuapp.com/api/movies/genres
   
 ### Note
 For front-end, we will use endpoints:
 - https://secret-atoll-56548.herokuapp.com/api/movies
 - https://secret-atoll-56548.herokuapp.com/api/movie/detail/{movie_id}
 - https://secret-atoll-56548.herokuapp.com/api/movie/casts/{movie_id}
+- https://secret-atoll-56548.herokuapp.com/api/movie/rating/{movie_id}
+- https://secret-atoll-56548.herokuapp.com/api/movies/genres
