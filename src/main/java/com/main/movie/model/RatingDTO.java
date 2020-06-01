@@ -6,6 +6,8 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.persistence.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @NoArgsConstructor
 @Getter
@@ -20,10 +22,17 @@ public class RatingDTO {
     @Column(name="user_id")
     private Integer userId;
 
+    private Integer movieId;
     @ManyToOne
     private MovieDTO movie;
 
     private Float rating;
     private String timestamp;
 
+    public RatingByYear getRatingByYear(){
+        Date date = new Date(Long.parseLong(this.getTimestamp()) * 1000);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy");
+        String formattedDate = dateFormat.format(date);
+        return new RatingByYear(Integer.valueOf(formattedDate),this.getRating());
+    }
 }

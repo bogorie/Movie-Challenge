@@ -6,7 +6,6 @@ import com.main.movie.model.*;
 import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
 import com.main.movie.repository.RatingDAO;
-import com.main.movie.repository.RatingRepository;
 import com.main.movie.util.SortOption;
 import io.vavr.API;
 import io.vavr.control.Option;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -160,7 +158,7 @@ public class MovieServiceImpl implements MovieService {
                                     movieDTO.getMovieId(),
                                     movieDTO.getTitle(),
                                     movieDTO.getGenres(),
-                                    movieDetail.getVote_average(),
+                                    movieDTO.getAverageRating(),
                                     movieDetail.getPoster_path(),
                                     movieDetail.getRelease_date(),
                                     movieDetail.getBudget(),
@@ -200,5 +198,34 @@ public class MovieServiceImpl implements MovieService {
                     .sorted()
                     .collect(Collectors.toCollection(LinkedHashSet::new)))
                 .map(GenreResponse::new);
+    }
+
+    @Override
+    public Mono<MovieRatingHistoryResponse> getMovieRatingHistory(Integer movieId) {
+         return Mono.just(getRatings(movieId))
+         .flatMap( ratingsByYear -> {
+             if(!ratingsByYear.isEmpty())
+                 return Mono.just( new MovieRatingHistoryResponse(movieId,ratingsByYear));
+             else
+                 return Mono.error( new ResourceNotFound("The movie with id " + movieId + " doesn't exist or isn't rated"));
+         });
+    }
+
+    private List<RatingByYear> getRatings(Integer movieId){
+        TreeMap<Integer,List<Float>> ratingMap = new TreeMap<>();
+        ratingDAO.findAllRatingByMovieId(movieId)
+                .forEach( ratingDTO -> {
+                    RatingByYear ratingByYear = ratingDTO.getRatingByYear();
+                    Integer key = ratingByYear.getYear();
+                    List<Float> previousRatingList = Optional.ofNullable(ratingMap.get(key)).orElse(new ArrayList<>());
+                    previousRatingList.add(ratingByYear.getRating());
+                    ratingMap.put(key,previousRatingList);
+                });
+        return ratingMap.entrySet()
+                .stream()
+                .map( integerListEntry ->
+                    new RatingByYear( integerListEntry.getKey(),(float) integerListEntry.getValue().stream().mapToDouble(a -> a)
+                            .average().orElse(0.0))
+                ).collect(Collectors.toList());
     }
 }

@@ -1,9 +1,11 @@
 package com.main.movie.repository;
 
+import com.main.movie.model.RatingDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 
 @Component
 public class RatingDAO implements RatingDAOInterface {
@@ -17,6 +19,11 @@ public class RatingDAO implements RatingDAOInterface {
                 .map(value -> value.split(","))
                 .forEach(array -> response.put(Integer.valueOf(array[0]),Float.valueOf(array[1])));
         return response;
+    }
+
+    @Override
+    public List<RatingDTO> findAllRatingByMovieId(Integer movieId) {
+        return ratingRepository.findAllRatingByMovieId(movieId);
     }
 
 }

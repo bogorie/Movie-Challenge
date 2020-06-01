@@ -25,4 +25,6 @@ public interface MovieService {
     Mono<CreditDTO> getApiCast(Integer movieId);
 
     Mono<GenreResponse> getMoviesGenres();
+
+    Mono<MovieRatingHistoryResponse> getMovieRatingHistory(Integer movieId);
 }
