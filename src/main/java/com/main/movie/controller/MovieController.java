@@ -38,7 +38,7 @@ public class MovieController {
     public Mono<CreditDTO> getApiCast(@PathVariable Integer movie_id) {
         return movieService.getApiCast(movie_id);
     }
-    
+
     @CrossOrigin
     @GetMapping("/movie/rating/{movie_id}")
     public Mono<MovieRatingHistoryResponse> getMovieRatingHistory(@PathVariable Integer movie_id){
