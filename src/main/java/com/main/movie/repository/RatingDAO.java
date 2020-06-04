@@ -26,4 +26,23 @@ public class RatingDAO implements RatingDAOInterface {
         return ratingRepository.findAllRatingByMovieId(movieId);
     }
 
+    @Override
+    public LinkedHashMap<Integer,Integer> getTotalGoodRatings() {
+        return listToMap(ratingRepository.getTotalGoodRatings());
+
+    }
+
+    @Override
+    public LinkedHashMap<Integer,Integer> getTotalRatings() {
+        return listToMap(ratingRepository.getTotalRatings());
+    }
+
+    private LinkedHashMap listToMap(List<String> results){
+        LinkedHashMap<Integer, Integer> response = new LinkedHashMap<>();
+        results.stream()
+                .map(value -> value.split(","))
+                .forEach(array -> response.put(Integer.valueOf(array[0]),Integer.valueOf(array[1])));
+        return response;
+    }
+
 }

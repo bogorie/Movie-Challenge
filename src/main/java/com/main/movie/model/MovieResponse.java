@@ -17,4 +17,5 @@ public class MovieResponse {
     private float budget;
     private String overview;
     private int runtime;
+    private float likedRating;
 }

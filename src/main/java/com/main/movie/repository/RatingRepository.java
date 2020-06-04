@@ -16,4 +16,12 @@ public interface RatingRepository extends CrudRepository<RatingDTO,Integer> {
     @Query( value = "select * from rating r where r.movie_id=?1 ",
             nativeQuery = true)
     List<RatingDTO> findAllRatingByMovieId(Integer movie_id);
+
+    @Query( value = "SELECT  movie_id, COUNT(*) as ratings FROM rating where rating>=40 group by movie_id",
+            nativeQuery = true)
+    List<String> getTotalGoodRatings();
+
+    @Query( value = "SELECT movie_id,COUNT(*) as ratings FROM rating group by movie_id",
+            nativeQuery = true)
+    List<String>  getTotalRatings();
 }

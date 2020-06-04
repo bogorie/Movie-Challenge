@@ -7,7 +7,6 @@ import com.main.movie.repository.LinkDAO;
 import com.main.movie.repository.MovieDAO;
 import com.main.movie.repository.RatingDAO;
 import com.main.movie.util.SortOption;
-import io.vavr.API;
 import io.vavr.control.Option;
 import io.vavr.control.Try;
 import org.slf4j.Logger;
@@ -23,12 +22,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-import static io.vavr.Patterns.$None;
-import static io.vavr.Patterns.$Some;
-import static io.vavr.Predicates.is;
 
 @Service
 public class MovieServiceImpl implements MovieService {
@@ -62,6 +55,8 @@ public class MovieServiceImpl implements MovieService {
                                                  Optional<String> title){
 
         LinkedHashMap<Integer,Float> averageRating = ratingDAO.findAverageRatings();
+        LinkedHashMap<Integer,Integer> totalGoodRatings = ratingDAO.getTotalGoodRatings();
+        LinkedHashMap<Integer,Integer> totalRatings = ratingDAO.getTotalRatings();
 
         int start = page.orElse(1);
         if (start == 0 || start == 1) start = 0;
@@ -74,7 +69,7 @@ public class MovieServiceImpl implements MovieService {
         // Variable needed to use into a lambda expression
         int finalStart = start;
 
-        return getFluxMovieDBResponse(sortByRating, sortByTitle, genres, limit, title, averageRating, start, sortPriorityOption, finalStart);
+        return getFluxMovieDBResponse(sortByRating, sortByTitle, genres, limit, title, averageRating,totalGoodRatings,totalRatings, start, sortPriorityOption, finalStart);
 
     }
 
@@ -84,6 +79,8 @@ public class MovieServiceImpl implements MovieService {
                                                          Optional<Integer> limit,
                                                          Optional<String> title,
                                                          LinkedHashMap<Integer, Float> averageRating,
+                                                         LinkedHashMap<Integer,Integer> totalGoodRatings,
+                                                         LinkedHashMap<Integer,Integer> totalRatings,
                                                          int start,
                                                          Option<SortOption> sortPriorityOption,
                                                          int finalStart){
@@ -97,10 +94,10 @@ public class MovieServiceImpl implements MovieService {
 
         if(compareByTitle){
              higherPriorityComparator = Comparator.comparing(MovieDBResponse::getTitle);
-             return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating,higherPriorityComparator);
+             return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating,higherPriorityComparator,totalGoodRatings,totalRatings);
         }else if(compareByRating) {
             higherPriorityComparator = Comparator.comparing(MovieDBResponse::getAverageRating).reversed();
-            return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating, higherPriorityComparator);
+            return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating, higherPriorityComparator,totalGoodRatings,totalRatings);
         }else if(compareByRatingAndTitle){
             if(compareByTitleIsPriority){
                 higherPriorityComparator = Comparator.comparing(MovieDBResponse::getTitle);
@@ -109,10 +106,10 @@ public class MovieServiceImpl implements MovieService {
                 higherPriorityComparator = Comparator.comparing(MovieDBResponse::getAverageRating).reversed();
                 lowerPriorityComparator = Comparator.comparing(MovieDBResponse::getTitle);
             }
-            return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating,higherPriorityComparator)
+            return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating,higherPriorityComparator,totalGoodRatings,totalRatings)
                     .sort(lowerPriorityComparator);
         }else{
-            return findAllMovies(genres,limit,title,start,averageRating);
+            return findAllMovies(genres,limit,title,start,averageRating,totalGoodRatings,totalRatings);
         }
     }
 
@@ -120,7 +117,9 @@ public class MovieServiceImpl implements MovieService {
                                                 Optional<Integer> limit,
                                                 Optional<String> title,
                                                 int start,
-                                                LinkedHashMap<Integer,Float> averageRating){
+                                                LinkedHashMap<Integer,Float> averageRating,
+                                                LinkedHashMap<Integer,Integer> totalGoodRatings,
+                                                LinkedHashMap<Integer,Integer> totalRatings){
         return Flux.fromIterable(movieDAO.findAll().stream()
                 .map( movieDTO -> {
                         movieDTO.removeQuoteFromTitleIfExist();
@@ -128,7 +127,8 @@ public class MovieServiceImpl implements MovieService {
                                 movieDTO.getMovieId(),
                                 movieDTO.getTitle(),
                                 movieDTO.getGenres(),
-                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10);
+                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10,
+                                getLikedRating(totalGoodRatings,totalRatings,movieDTO.getMovieId()));
                 })
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                 .filter(f -> !genres.isPresent() || f.getGenres().toLowerCase().contains(genres.get().toLowerCase()))
@@ -142,7 +142,9 @@ public class MovieServiceImpl implements MovieService {
                                                       Optional<String> title,
                                                       int start,
                                                       LinkedHashMap<Integer,Float> averageRating,
-                                                      Comparator<MovieDBResponse> comparator){
+                                                      Comparator<MovieDBResponse> comparator,
+                                                      LinkedHashMap<Integer,Integer> totalGoodRatings,
+                                                      LinkedHashMap<Integer,Integer> totalRatings){
         return Flux.fromIterable(
             movieDAO.findAll().stream()
                     .map( movieDTO -> {
@@ -151,7 +153,8 @@ public class MovieServiceImpl implements MovieService {
                                 movieDTO.getMovieId(),
                                 movieDTO.getTitle(),
                                 movieDTO.getGenres(),
-                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10);
+                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10,
+                                getLikedRating(totalGoodRatings,totalRatings,movieDTO.getMovieId()));
                     })
                     .sorted(comparator)
                     .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
@@ -209,7 +212,8 @@ public class MovieServiceImpl implements MovieService {
                                     movieDetail.getRelease_date(),
                                     movieDetail.getBudget(),
                                     movieDetail.getOverview(),
-                                    movieDetail.getRuntime()))
+                                    movieDetail.getRuntime(),
+                                    movieDTO.getLikedRating()))
                             .onErrorResume( RuntimeException.class, __ ->  Mono.empty())
                 );
     }
@@ -274,5 +278,14 @@ public class MovieServiceImpl implements MovieService {
                     new RatingByYear( integerListEntry.getKey(),(float) integerListEntry.getValue().stream().mapToDouble(a -> a)
                             .average().orElse(0.0))
                 ).collect(Collectors.toList());
+    }
+
+    private float getLikedRating(LinkedHashMap<Integer, Integer> totalGoodRatings,
+                               LinkedHashMap<Integer, Integer> totalRatings,
+                               Integer movieId) {
+        Integer totalGoodRatingFromMovie = Optional.ofNullable(totalGoodRatings.get(movieId)).orElse(0);
+        Integer totalRatingFromMovie = Optional.ofNullable(totalRatings.get(movieId)).orElse(1);
+        return (float) ((totalGoodRatingFromMovie * 100) / totalRatingFromMovie);
+
     }
 }

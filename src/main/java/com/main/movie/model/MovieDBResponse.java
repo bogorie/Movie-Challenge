@@ -8,8 +8,9 @@ import lombok.*;
 @Setter
 @ToString(includeFieldNames=true)
 public class MovieDBResponse {
-    private Integer movieId;
+    private int movieId;
     private String title;
     private String genres;
-    private Float averageRating;
+    private float averageRating;
+    private float likedRating;
 }

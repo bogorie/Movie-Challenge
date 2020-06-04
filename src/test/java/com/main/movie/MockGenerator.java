@@ -24,16 +24,16 @@ public class MockGenerator {
         List<MovieDBResponse> movieListMock = new ArrayList<>();
         Set<RatingDTO> ratingDTOMock = new HashSet<>();
         for(int i=0; i<5; i++)
-            movieListMock.add( new MovieDBResponse(i, i+":movie", "genre"+i, (float) 1.0) );
+            movieListMock.add( new MovieDBResponse(i, i+":movie", "genre"+i, (float) 1.0,(float)45) );
         for(int i=5; i<10; i++)
-            movieListMock.add( new MovieDBResponse(i, i+":dummy", "dummy"+i,  (float) 1.0) );
+            movieListMock.add( new MovieDBResponse(i, i+":dummy", "dummy"+i,  (float) 1.0,(float)45) );
         return movieListMock;
     }
 
     public static List<MovieDBResponse> movieWithFilter(){
         List<MovieDBResponse> movieListMock = new ArrayList<>();
         for(int i=0; i<5; i++)
-            movieListMock.add( new MovieDBResponse(i, i+":movie", "genre"+i, (float)i) );
+            movieListMock.add( new MovieDBResponse(i, i+":movie", "genre"+i, (float)i,(float)55) );
         return movieListMock;
     }
 
@@ -41,7 +41,7 @@ public class MockGenerator {
         List<MovieResponse> movieResponseList = new ArrayList<>();
         for(int i=0; i<5; i++)
             movieResponseList.add(
-                    new MovieResponse(i, i+":movie", "genre"+i, (float) 4.5, "http://mockHost.com/image/mockImage.jpg", "2000-1-1", 30000, "mock overview for movie "+i,i)
+                    new MovieResponse(i, i+":movie", "genre"+i, (float) 4.5, "http://mockHost.com/image/mockImage.jpg", "2000-1-1", 30000, "mock overview for movie "+i,i,100)
             );
 
         return movieResponseList;

@@ -12,4 +12,10 @@ public interface RatingDAOInterface {
 
     @Cacheable("ratingByMovieId")
     List<RatingDTO> findAllRatingByMovieId(Integer movieId);
+
+    @Cacheable("totalGoodRatings")
+    LinkedHashMap<Integer,Integer> getTotalGoodRatings();
+
+    @Cacheable("totalRatings")
+    LinkedHashMap<Integer,Integer> getTotalRatings();
 }
