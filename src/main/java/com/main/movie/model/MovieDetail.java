@@ -16,4 +16,5 @@ public class MovieDetail {
     private float budget;
     private String overview;
     private float vote_average;
+    private int runtime;
 }

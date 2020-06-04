@@ -129,10 +129,10 @@ class MovieServiceImplTest {
 
         List<MovieDBResponse> result = MockGenerator.movieWithFilter();
         for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
-            result.get((int)index).setAverageRating(rating);
+            result.get((int)index).setAverageRating(rating/10);
         }
         result.sort(Comparator.comparing(MovieDBResponse::getTitle));
-        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating).reversed());
 
         Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieDBResponse> moviesList = movies.collectList().block();
@@ -152,10 +152,10 @@ class MovieServiceImplTest {
 
         List<MovieDBResponse> result = MockGenerator.movieWithFilter();
         for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
-            result.get((int)index).setAverageRating(rating);
+            result.get((int)index).setAverageRating(rating/10);
         }
 
-        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating).reversed());
         result.sort(Comparator.comparing(MovieDBResponse::getTitle));
 
         Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
@@ -177,10 +177,10 @@ class MovieServiceImplTest {
 
         List<MovieDBResponse> result = MockGenerator.movieWithFilter();
         for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
-            result.get((int)index).setAverageRating(rating);
+            result.get((int)index).setAverageRating(rating/10);
         }
 
-        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating).reversed());
         result.sort(Comparator.comparing(MovieDBResponse::getTitle));
 
         Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
@@ -201,10 +201,10 @@ class MovieServiceImplTest {
 
         List<MovieDBResponse> result = MockGenerator.movieWithFilter();
         for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
-            result.get((int)index).setAverageRating(rating);
+            result.get((int)index).setAverageRating(rating/10);
         }
         /* By default the priority is rating*/
-        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating).reversed());
         result.sort(Comparator.comparing(MovieDBResponse::getTitle));
 
         Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
@@ -223,7 +223,7 @@ class MovieServiceImplTest {
 
         List<MovieDBResponse> result = MockGenerator.movieWithFilter();
         for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
-            result.get((int)index).setAverageRating(rating);
+            result.get((int)index).setAverageRating(rating/10);
         }
         Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),Optional.empty(),genres, Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieDBResponse> moviesList = movies.collectList().block();

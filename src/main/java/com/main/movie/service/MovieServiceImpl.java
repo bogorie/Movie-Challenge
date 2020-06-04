@@ -208,7 +208,8 @@ public class MovieServiceImpl implements MovieService {
                                     movieDetail.getPoster_path(),
                                     movieDetail.getRelease_date(),
                                     movieDetail.getBudget(),
-                                    movieDetail.getOverview()))
+                                    movieDetail.getOverview(),
+                                    movieDetail.getRuntime()))
                             .onErrorResume( RuntimeException.class, __ ->  Mono.empty())
                 );
     }

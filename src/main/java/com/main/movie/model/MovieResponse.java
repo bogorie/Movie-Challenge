@@ -1,14 +1,12 @@
 package com.main.movie.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
+@ToString(includeFieldNames=true)
 public class MovieResponse {
     private int movieId;
     private String title;
@@ -18,4 +16,5 @@ public class MovieResponse {
     private String release_date;
     private float budget;
     private String overview;
+    private int runtime;
 }

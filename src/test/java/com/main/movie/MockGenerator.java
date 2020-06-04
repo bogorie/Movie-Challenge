@@ -41,7 +41,7 @@ public class MockGenerator {
         List<MovieResponse> movieResponseList = new ArrayList<>();
         for(int i=0; i<5; i++)
             movieResponseList.add(
-                    new MovieResponse(i, i+":movie", "genre"+i, (float) 4.5, "http://mockHost.com/image/mockImage.jpg", "2000-1-1", 30000, "mock overview for movie "+i)
+                    new MovieResponse(i, i+":movie", "genre"+i, (float) 4.5, "http://mockHost.com/image/mockImage.jpg", "2000-1-1", 30000, "mock overview for movie "+i,i)
             );
 
         return movieResponseList;
@@ -52,7 +52,7 @@ public class MockGenerator {
     }
 
     public static Optional<MovieDetail> getMockMovieDetail(){
-        MovieDetail movieDetail = new MovieDetail(650, "http://mockHost.com/image/mockImage.jpg", "2000-1-1", 30000, "mock overview", (float) 4.5);
+        MovieDetail movieDetail = new MovieDetail(650, "http://mockHost.com/image/mockImage.jpg", "2000-1-1", 30000, "mock overview", (float) 4.5,45);
         return Optional.of(movieDetail);
     }
 
@@ -70,7 +70,8 @@ public class MockGenerator {
                 "1995-10-30",
                 30000000,
                 "Led by Woody, Andy's toys live happily in his room until Andy's birthday brings Buzz Lightyear onto the scene. Afraid of losing his place in Andy's heart, Woody plots against Buzz. But when circumstances separate Buzz and Woody from their owner, the duo eventually learns to put aside their differences.",
-                (float) 7.9);
+                (float) 7.9,
+                45);
     }
 
     public static CreditDTO getMockCredit(){
