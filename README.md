@@ -2,6 +2,9 @@
 The idea of this challenge is to improve interdisciplinary skills by developing a simple project in multiple stages. Each stage is designed to develop some specific skills. This challenge is not tied to any specific technology or language. We want to allow participants to explore and choose what best suits the problem and their capabilities.
 ## Stage 1
 Data extraction – organization and simple visualization
+
+# [Swagger API Documentation](https://secret-atoll-56548.herokuapp.com/swagger-ui.html#!/movie-controller)
+
 ### Endpoints
 1. Shows movies from data base
   https://secret-atoll-56548.herokuapp.com/api/moviesDB
