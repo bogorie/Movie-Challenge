@@ -24,4 +24,11 @@ public class MovieDTO {
     @OneToMany(mappedBy="movie")
     private Set<RatingDTO> ratings;
 
+    public void removeQuoteFromTitleIfExist(){
+        if(this.title.charAt(0)=='\'' || this.title.charAt(0)=='\"'){
+            this.title = this.title.replaceFirst("\'", "");
+            this.title = this.title.replaceFirst("\"", "");
+        }
+    }
+
 }

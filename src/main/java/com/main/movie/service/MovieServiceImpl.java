@@ -13,6 +13,7 @@ import io.vavr.control.Try;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
@@ -52,11 +53,13 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public Flux<MovieDBResponse> getMoviesFromDB(Optional<String> sort,
-                                          Optional<String> genres,
-                                          Optional<Integer> limit,
-                                          Optional<Integer> page,
-                                          Optional<String> title){
+    public Flux<MovieDBResponse> getMoviesFromDB(Optional<String> sortPriority,
+                                                 Optional<Boolean> sortByRating,
+                                                 Optional<Boolean> sortByTitle,
+                                                 Optional<String> genres,
+                                                 Optional<Integer> limit,
+                                                 Optional<Integer> page,
+                                                 Optional<String> title){
 
         LinkedHashMap<Integer,Float> averageRating = ratingDAO.findAverageRatings();
 
@@ -64,33 +67,69 @@ public class MovieServiceImpl implements MovieService {
         if (start == 0 || start == 1) start = 0;
         else start = (start-1) * limit.orElse(10);
 
-        Option<SortOption> sortOption = Option.none();
-        Try<SortOption> optionParam = Try.of( () -> SortOption.valueOf(sort.get().toUpperCase()));
-        if(optionParam.isSuccess()) sortOption = Option.of(optionParam.get());
+        Option<SortOption> sortPriorityOption = Option.none();
+        Try<SortOption> optionParam = Try.of( () -> SortOption.valueOf(sortPriority.get().toUpperCase()));
+        if(optionParam.isSuccess()) sortPriorityOption = Option.of(optionParam.get());
 
         // Variable needed to use into a lambda expression
         int finalStart = start;
-        return API.Match(sortOption).of(
-          Case($Some($()), value ->
-                  API.Match(value).of(
-                          Case($(is(SortOption.TITLE)),findAllMoviesSortByTitle(genres,limit,title, finalStart,averageRating)),
-                          Case($(),findAllMovies(genres,limit,title, finalStart,averageRating)))),
-          Case($None(), findAllMovies(genres,limit,title,start,averageRating)));
+
+        return getFluxMovieDBResponse(sortByRating, sortByTitle, genres, limit, title, averageRating, start, sortPriorityOption, finalStart);
+
+    }
+
+    private Flux<MovieDBResponse> getFluxMovieDBResponse(Optional<Boolean> sortByRating,
+                                                         Optional<Boolean> sortByTitle,
+                                                         Optional<String> genres,
+                                                         Optional<Integer> limit,
+                                                         Optional<String> title,
+                                                         LinkedHashMap<Integer, Float> averageRating,
+                                                         int start,
+                                                         Option<SortOption> sortPriorityOption,
+                                                         int finalStart){
+        boolean compareByTitle = sortByTitle.isPresent() && sortByTitle.get() && ( !sortByRating.isPresent() || sortByRating.get().equals(false));
+        boolean compareByRating = sortByRating.isPresent() && sortByRating.get() && ( !sortByTitle.isPresent() || sortByTitle.get().equals(false));
+        boolean compareByRatingAndTitle = sortByRating.isPresent() && sortByRating.get() && sortByTitle.isPresent() && sortByTitle.get();
+        boolean compareByTitleIsPriority = sortPriorityOption.isDefined() && sortPriorityOption.get().equals(SortOption.TITLE);
+
+        Comparator<MovieDBResponse> higherPriorityComparator;
+        Comparator<MovieDBResponse> lowerPriorityComparator;
+
+        if(compareByTitle){
+             higherPriorityComparator = Comparator.comparing(MovieDBResponse::getTitle);
+             return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating,higherPriorityComparator);
+        }else if(compareByRating) {
+            higherPriorityComparator = Comparator.comparing(MovieDBResponse::getAverageRating).reversed();
+            return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating, higherPriorityComparator);
+        }else if(compareByRatingAndTitle){
+            if(compareByTitleIsPriority){
+                higherPriorityComparator = Comparator.comparing(MovieDBResponse::getTitle);
+                lowerPriorityComparator = Comparator.comparing(MovieDBResponse::getAverageRating).reversed();
+            }else{
+                higherPriorityComparator = Comparator.comparing(MovieDBResponse::getAverageRating).reversed();
+                lowerPriorityComparator = Comparator.comparing(MovieDBResponse::getTitle);
+            }
+            return findAllMoviesSortBy(genres, limit, title, finalStart, averageRating,higherPriorityComparator)
+                    .sort(lowerPriorityComparator);
+        }else{
+            return findAllMovies(genres,limit,title,start,averageRating);
+        }
     }
 
     private Flux<MovieDBResponse> findAllMovies(Optional<String> genres,
-                                         Optional<Integer> limit,
-                                         Optional<String> title,
-                                         int start,
-                                         LinkedHashMap<Integer,Float> averageRating){
+                                                Optional<Integer> limit,
+                                                Optional<String> title,
+                                                int start,
+                                                LinkedHashMap<Integer,Float> averageRating){
         return Flux.fromIterable(movieDAO.findAll().stream()
-                .map( movieDTO ->
-                        new MovieDBResponse(
+                .map( movieDTO -> {
+                        movieDTO.removeQuoteFromTitleIfExist();
+                        return new MovieDBResponse(
                                 movieDTO.getMovieId(),
                                 movieDTO.getTitle(),
                                 movieDTO.getGenres(),
-                                averageRating.get(movieDTO.getMovieId())
-                        ))
+                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10);
+                })
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
                 .filter(f -> !genres.isPresent() || f.getGenres().toLowerCase().contains(genres.get().toLowerCase()))
                 .skip(start)
@@ -98,38 +137,43 @@ public class MovieServiceImpl implements MovieService {
                 .collect(Collectors.toList()));
     }
 
-    private Flux<MovieDBResponse> findAllMoviesSortByTitle(Optional<String> genres,
-                                                    Optional<Integer> limit,
-                                                    Optional<String> title,
-                                                    int start,
-                                                    LinkedHashMap<Integer,Float> averageRating){
-        return Flux.fromIterable(movieDAO.findAll().stream()
-                .map( movieDTO ->
-                     new MovieDBResponse(
-                            movieDTO.getMovieId(),
-                            movieDTO.getTitle(),
-                            movieDTO.getGenres(),
-                            averageRating.get(movieDTO.getMovieId())
-                     ))
-                .sorted(Comparator.comparing(MovieDBResponse::getTitle))
-                .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
-                .filter(f -> {
-                    if (!genres.isPresent())
-                        return true;
-                    boolean flag = false;
-                    String[] g = genres.get().split(",");
-                    for (String s : g) flag = f.getGenres().toLowerCase().contains(s.toLowerCase());
-                    return flag;
-                })
-                .skip(start)
-                .limit(limit.orElse(10))
-                .collect(Collectors.toList()));
+    private Flux<MovieDBResponse> findAllMoviesSortBy(Optional<String> genres,
+                                                      Optional<Integer> limit,
+                                                      Optional<String> title,
+                                                      int start,
+                                                      LinkedHashMap<Integer,Float> averageRating,
+                                                      Comparator<MovieDBResponse> comparator){
+        return Flux.fromIterable(
+            movieDAO.findAll().stream()
+                    .map( movieDTO -> {
+                        movieDTO.removeQuoteFromTitleIfExist();
+                        return new MovieDBResponse(
+                                movieDTO.getMovieId(),
+                                movieDTO.getTitle(),
+                                movieDTO.getGenres(),
+                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10);
+                    })
+                    .sorted(comparator)
+                    .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
+                    .filter(f -> {
+                        if (!genres.isPresent())
+                            return true;
+                        boolean flag = false;
+                        String[] g = genres.get().split(",");
+                        for (String s : g) flag = f.getGenres().toLowerCase().contains(s.toLowerCase());
+                        return flag;
+                    })
+                    .skip(start)
+                    .limit(limit.orElse(10))
+                    .collect(Collectors.toList()));
     }
 
     @Override
+    @Cacheable("getApiDetails")
     public Mono<MovieDetail> getApiDetails(Integer movieId){
-        Option<Integer> tmdbId = Option.ofOptional(linkDAO.findTmdbId(movieId));
-        return tmdbId.map( theTmdbId -> {
+        return Mono.from(
+        Option.ofOptional(linkDAO.findTmdbId(movieId))
+            .map( theTmdbId -> {
 
             String apiKey = env.getProperty("api.key");
             String uri = theTmdbId.toString() + apiKey;
@@ -142,16 +186,18 @@ public class MovieServiceImpl implements MovieService {
                             movieDetail.setPoster_path(poster_path);
                         return movieDetail;
                         });
-        }).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist")));
+        }).getOrElse(Mono.error( () ->  new ResourceNotFound("The movie with id " + movieId + " doesn't exist"))));
     }
 
     @Override
-    public Flux<MovieResponse> getMoviesData(Optional<String> sort,
+    public Flux<MovieResponse> getMoviesData(Optional<String> sortPriority,
+                                             Optional<Boolean> sortByRating,
+                                             Optional<Boolean> sortByTitle,
                                              Optional<String> genres,
                                              Optional<Integer> limit,
                                              Optional<Integer> page,
                                              Optional<String> title){
-        return getMoviesFromDB(sort, genres, limit, page, title)
+        return getMoviesFromDB(sortPriority, sortByRating, sortByTitle, genres, limit, page, title)
                 .flatMap( movieDTO ->
                       getApiDetails(movieDTO.getMovieId())
                             .map( movieDetail -> new MovieResponse(

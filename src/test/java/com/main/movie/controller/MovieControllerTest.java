@@ -94,7 +94,7 @@ class MovieControllerTest {
         Mono<List<MovieDBResponse>> mono = Mono.just(MockGenerator.getMockMovies());
         Flux<MovieDBResponse> movies = mono.flatMapMany(Flux::fromIterable);
 
-        BDDMockito.given(movieService.getMoviesFromDB(Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
+        BDDMockito.given(movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
                 .willReturn(movies);
         MvcResult response = mockMvc.perform(get("/api/moviesDB")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -111,7 +111,7 @@ class MovieControllerTest {
         Mono<List<MovieResponse>> mono = Mono.just(MockGenerator.getMockMoviesDetail());
         Flux<MovieResponse> movies = mono.flatMapMany(Flux::fromIterable);
 
-        BDDMockito.given(movieService.getMoviesData(Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
+        BDDMockito.given(movieService.getMoviesData(Optional.empty(),Optional.empty(),Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()))
                 .willReturn(movies);
         MvcResult response = mockMvc.perform(get("/api/movies")
                 .contentType(MediaType.APPLICATION_JSON))

@@ -30,11 +30,10 @@ public class MockGenerator {
         return movieListMock;
     }
 
-    public static List<MovieDTO> movieWithFilter(){
-        List<MovieDTO> movieListMock = new ArrayList<>();
-        Set<RatingDTO> ratingDTOMock = new HashSet<>();
+    public static List<MovieDBResponse> movieWithFilter(){
+        List<MovieDBResponse> movieListMock = new ArrayList<>();
         for(int i=0; i<5; i++)
-            movieListMock.add( new MovieDTO(i, i+":movie", "genre"+i, ratingDTOMock) );
+            movieListMock.add( new MovieDBResponse(i, i+":movie", "genre"+i, (float)i) );
         return movieListMock;
     }
 
@@ -67,7 +66,7 @@ public class MockGenerator {
 
     public static MovieDetail getResultMovieDetail(){
         return new MovieDetail(862,
-                "https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
+                "https://image.tmdb.org/t/p/original/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
                 "1995-10-30",
                 30000000,
                 "Led by Woody, Andy's toys live happily in his room until Andy's birthday brings Buzz Lightyear onto the scene. Afraid of losing his place in Andy's heart, Woody plots against Buzz. But when circumstances separate Buzz and Woody from their owner, the duo eventually learns to put aside their differences.",
@@ -76,7 +75,7 @@ public class MockGenerator {
 
     public static CreditDTO getMockCredit(){
         List<CastDTO> castList = new ArrayList<>();
-        castList.add( new CastDTO(14, "Woody (voice)", "Tom Hanks", "https://image.tmdb.org/t/p/w500/2gY92j2lkNHL2cThBhPmgXLd5PL.jpg") );
+        castList.add( new CastDTO(14, "Woody (voice)", "Tom Hanks", "https://image.tmdb.org/t/p/original/2gY92j2lkNHL2cThBhPmgXLd5PL.jpg") );
         castList.add( new CastDTO(15, "Buzz Lightyear (voice)", "Tim Allen", "") );
 
         CreditDTO credit = new CreditDTO(862, castList);

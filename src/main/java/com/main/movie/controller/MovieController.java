@@ -47,22 +47,26 @@ public class MovieController {
 
     @CrossOrigin
     @GetMapping("/moviesDB")
-    public Flux<MovieDBResponse> getMovies(@RequestParam(required = false) Optional<String> sort,
-                                    @RequestParam(required = false) Optional<String> genres,
-                                    @RequestParam(required = false) Optional<Integer> limit,
-                                    @RequestParam(required = false) Optional<Integer> page,
-                                    @RequestParam(required = false) Optional<String> title){
-        return movieService.getMoviesFromDB(sort, genres, limit, page, title);
+    public Flux<MovieDBResponse> getMovies(@RequestParam(required = false) Optional<String> sortPriority,
+                                           @RequestParam(required = false) Optional<Boolean> sortByRating,
+                                           @RequestParam(required = false) Optional<Boolean> sortByTitle,
+                                           @RequestParam(required = false) Optional<String> genres,
+                                           @RequestParam(required = false) Optional<Integer> limit,
+                                           @RequestParam(required = false) Optional<Integer> page,
+                                           @RequestParam(required = false) Optional<String> title){
+        return movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, limit, page, title);
     }
 
     @CrossOrigin
     @GetMapping("/movies")
-    public Flux<MovieResponse> getMovieData(@RequestParam(required = false) Optional<String> sort,
+    public Flux<MovieResponse> getMovieData(@RequestParam(required = false) Optional<String> sortPriority,
+                                            @RequestParam(required = false) Optional<Boolean> sortByRating,
+                                            @RequestParam(required = false) Optional<Boolean> sortByTitle,
                                             @RequestParam(required = false) Optional<String> genres,
                                             @RequestParam(required = false) Optional<Integer> limit,
                                             @RequestParam(required = false) Optional<Integer> page,
                                             @RequestParam(required = false) Optional<String> title){
-        return movieService.getMoviesData(sort, genres, limit, page, title);
+        return movieService.getMoviesData(sortPriority,sortByRating,sortByTitle, genres, limit, page, title);
     }
 
     @CrossOrigin

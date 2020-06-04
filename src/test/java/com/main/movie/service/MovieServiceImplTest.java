@@ -5,6 +5,7 @@ import com.main.movie.config.TestConfigurationSuite;
 import com.main.movie.model.*;
 import com.main.movie.repository.LinkRepository;
 import com.main.movie.repository.MoviesRepository;
+import com.main.movie.repository.RatingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -17,6 +18,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,9 @@ class MovieServiceImplTest {
     @MockBean
     private LinkRepository linkRepository;
 
+    @MockBean
+    private RatingRepository ratingRepository;
+
     private int mockMovieId;
 
 
@@ -49,6 +54,9 @@ class MovieServiceImplTest {
 
         Mockito.when(linkRepository.findTmdbId(mockMovieId))
                 .thenReturn(MockGenerator.getMockTmdbId());
+
+        Mockito.when(ratingRepository.findAverageRatings())
+                .thenReturn(Arrays.asList("0,10","1,9","2,8","3,7","4,6","5,5","6,4","7,3","8,2","9,1"));
     }
 
     @Test
@@ -71,7 +79,7 @@ class MovieServiceImplTest {
     void getMoviesFromDBNotQueryParam() {
         List<MovieDBResponse> result = MockGenerator.getMockMovies();
 
-        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieDBResponse> moviesList = movies.toStream().collect(Collectors.toList());
 
         for(int i=0; i<result.size(); i++){
@@ -81,12 +89,12 @@ class MovieServiceImplTest {
 
     @Test
     void getMoviesFromDBSortTitle() {
-        Optional<String> sort = Optional.of("title");
+        Optional<Boolean> sortByTile = Optional.of(true);
 
         List<MovieDBResponse> result = MockGenerator.getMockMovies();
         result.sort(Comparator.comparing(MovieDBResponse::getTitle));
 
-        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sort, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),sortByTile,Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieDBResponse> moviesList = movies.collectList().block();
 
         for(int i=0; i<result.size(); i++){
@@ -97,12 +105,13 @@ class MovieServiceImplTest {
     @Test
     void getMoviesFromDBFilterGenre() {
         Optional<String> genres = Optional.of("genre");
-        Optional<String> sort = Optional.of("title");
+        Optional<Boolean> sortByTitle = Optional.of(true);
 
-        List<MovieDTO> result = MockGenerator.movieWithFilter();
-        result.sort(Comparator.comparing(MovieDTO::getTitle));
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
+        result.sort(Comparator.comparing(MovieDBResponse::getTitle));
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
 
-        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sort, genres, Optional.empty(), Optional.empty(), Optional.empty());
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieDBResponse> moviesList = movies.collectList().block();
 
         assertEquals(moviesList.size(), result.size());
@@ -112,12 +121,111 @@ class MovieServiceImplTest {
     }
 
     @Test
+    void getMoviesFromDBFSortByTitleAndRatingWithTitlePriority() {
+        Optional<String> genres = Optional.of("genre");
+        Optional<Boolean> sortByTitle = Optional.of(true);
+        Optional<Boolean> sortByRating = Optional.of(true);
+        Optional<String> sortPriority = Optional.of("title");
+
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
+        for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
+            result.get((int)index).setAverageRating(rating);
+        }
+        result.sort(Comparator.comparing(MovieDBResponse::getTitle));
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
+
+        assertEquals(moviesList.size(), result.size());
+        for(int i=0; i<result.size(); i++){
+            assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
+            assertEquals(moviesList.get(i).getAverageRating(), result.get(i).getAverageRating());
+        }
+    }
+    @Test
+    void getMoviesFromDBFSortByTitleAndRatingWithRatingPriority() {
+        Optional<String> genres = Optional.of("genre");
+        Optional<Boolean> sortByTitle = Optional.of(true);
+        Optional<Boolean> sortByRating = Optional.of(true);
+        Optional<String> sortPriority = Optional.of("rating");
+
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
+        for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
+            result.get((int)index).setAverageRating(rating);
+        }
+
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getTitle));
+
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
+
+        assertEquals(moviesList.size(), result.size());
+        for(int i=0; i<result.size(); i++){
+            assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
+            assertEquals(moviesList.get(i).getAverageRating(), result.get(i).getAverageRating());
+        }
+    }
+
+    @Test
+    void getMoviesFromDBFSortByTitleAndRatingWithInvalidPriority() {
+        Optional<String> genres = Optional.of("genre");
+        Optional<Boolean> sortByTitle = Optional.of(true);
+        Optional<Boolean> sortByRating = Optional.of(true);
+        Optional<String> sortPriority = Optional.of("year");
+
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
+        for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
+            result.get((int)index).setAverageRating(rating);
+        }
+
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getTitle));
+
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(sortPriority,sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
+
+        assertEquals(moviesList.size(), result.size());
+        for(int i=0; i<result.size(); i++){
+            assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
+            assertEquals(moviesList.get(i).getAverageRating(), result.get(i).getAverageRating());
+        }
+    }
+
+    @Test
+    void getMoviesFromDBFSortByTitleAndRating() {
+        Optional<String> genres = Optional.of("genre");
+        Optional<Boolean> sortByTitle = Optional.of(true);
+        Optional<Boolean> sortByRating = Optional.of(true);
+
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
+        for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
+            result.get((int)index).setAverageRating(rating);
+        }
+        /* By default the priority is rating*/
+        result.sort(Comparator.comparing(MovieDBResponse::getAverageRating));
+        result.sort(Comparator.comparing(MovieDBResponse::getTitle));
+
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),sortByRating,sortByTitle, genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> moviesList = movies.collectList().block();
+
+        assertEquals(moviesList.size(), result.size());
+        for(int i=0; i<result.size(); i++){
+            assertEquals(moviesList.get(i).getMovieId(), result.get(i).getMovieId());
+            assertEquals(moviesList.get(i).getAverageRating(), result.get(i).getAverageRating());
+        }
+    }
+
+    @Test
     void getMoviesFromDBFilterGenreAndSortTitle() {
         Optional<String> genres = Optional.of("genre");
 
-        List<MovieDTO> result = MockGenerator.movieWithFilter();
-
-        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), genres, Optional.empty(), Optional.empty(), Optional.empty());
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
+        for(float rating = 10,  index = 0 ; rating > 10-result.size(); rating--, index ++ ){
+            result.get((int)index).setAverageRating(rating);
+        }
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),Optional.empty(),genres, Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieDBResponse> moviesList = movies.collectList().block();
 
         assertEquals(moviesList.size(), result.size());
@@ -133,7 +241,7 @@ class MovieServiceImplTest {
 
         List<MovieDBResponse> result = MockGenerator.getMockMovies();
 
-        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), limit, page, Optional.empty());
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),Optional.empty(), Optional.empty(), limit, page, Optional.empty());
         List<MovieDBResponse> moviesList = movies.collectList().block();
 
         assertEquals(moviesList.size(), limit.get());
@@ -146,9 +254,9 @@ class MovieServiceImplTest {
     void getMoviesFromDBSearchFromTitle() {
         Optional<String> title = Optional.of("movie");
 
-        List<MovieDTO> result = MockGenerator.movieWithFilter();
+        List<MovieDBResponse> result = MockGenerator.movieWithFilter();
 
-        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), title);
+        Flux<MovieDBResponse> movies = movieService.getMoviesFromDB(Optional.empty(),Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), title);
         List<MovieDBResponse> moviesList = movies.collectList().block();
 
         for(int i=0; i<result.size(); i++){
@@ -178,7 +286,7 @@ class MovieServiceImplTest {
             Mockito.when(linkRepository.findTmdbId(i))
                     .thenReturn(MockGenerator.getMockTmdbId());
 
-        Flux<MovieResponse> movieResponse = movieService.getMoviesData(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        Flux<MovieResponse> movieResponse = movieService.getMoviesData(Optional.empty(),Optional.empty(),Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         List<MovieResponse> movieResponseList = movieResponse.toStream().collect(Collectors.toList());
 
         assertNotNull(movieResponseList);
@@ -187,7 +295,6 @@ class MovieServiceImplTest {
             assertEquals(resultList.get(i).getMovieId(), movieResponseList.get(i).getMovieId());
             assertEquals(resultList.get(i).getTitle(), movieResponseList.get(i).getTitle());
             assertEquals(resultList.get(i).getGenres(), movieResponseList.get(i).getGenres());
-            assertEquals(resultDetail.getVote_average(), movieResponseList.get(i).getRating());
             assertEquals(resultDetail.getPoster_path(), movieResponseList.get(i).getPoster_path());
             assertEquals(resultDetail.getRelease_date(), movieResponseList.get(i).getRelease_date());
             assertEquals(resultDetail.getBudget(), movieResponseList.get(i).getBudget());
