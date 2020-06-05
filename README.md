@@ -3,8 +3,6 @@ The idea of this challenge is to improve interdisciplinary skills by developing 
 ## Stage 1
 Data extraction – organization and simple visualization
 
-# [Swagger API Documentation](https://secret-atoll-56548.herokuapp.com/swagger-ui.html#!/movie-controller)
-
 ### Endpoints
 1. Shows movies from data base
   https://secret-atoll-56548.herokuapp.com/api/moviesDB
@@ -43,10 +41,8 @@ Data extraction – organization and simple visualization
 7. Shows all genres
   https://secret-atoll-56548.herokuapp.com/api/movies/genres
   
-### Note
-For front-end, we will use endpoints:
-- https://secret-atoll-56548.herokuapp.com/api/movies
-- https://secret-atoll-56548.herokuapp.com/api/movie/detail/{movie_id}
-- https://secret-atoll-56548.herokuapp.com/api/movie/casts/{movie_id}
-- https://secret-atoll-56548.herokuapp.com/api/movie/rating/{movie_id}
-- https://secret-atoll-56548.herokuapp.com/api/movies/genres
+## Stage 2
+Top movies and Ratings over time visualization
+
+### Endpoints
+### [Swagger API Documentation](https://secret-atoll-56548.herokuapp.com/swagger-ui.html#!/movie-controller)
