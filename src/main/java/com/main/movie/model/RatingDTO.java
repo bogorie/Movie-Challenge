@@ -25,7 +25,6 @@ public class RatingDTO {
     private Integer movieId;
     @ManyToOne
     private MovieDTO movie;
-
     private Float rating;
     private String timestamp;
 
