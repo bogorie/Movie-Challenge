@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface LinkRepository extends CrudRepository<LinkDTO, Integer> {
-    @Query( value = "select l.tmdb_id from link l where l.movie_id=?1 group by imdb_id, tmdb_id,  movie_id ",
+    @Query( value = "select l.tmdb_id from link l where l.movie_id=?1 LIMIT 1 ",
             nativeQuery = true)
     Optional<Integer> findTmdbId(Integer movie_id);
 }
