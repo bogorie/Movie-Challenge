@@ -127,7 +127,7 @@ public class MovieServiceImpl implements MovieService {
                                 movieDTO.getMovieId(),
                                 movieDTO.getTitle(),
                                 movieDTO.getGenres(),
-                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10,
+                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0)),
                                 getLikedRating(totalGoodRatings,totalRatings,movieDTO.getMovieId()));
                 })
                 .filter(t -> !title.isPresent() || t.getTitle().toLowerCase().contains(title.get().toLowerCase()))
@@ -153,7 +153,7 @@ public class MovieServiceImpl implements MovieService {
                                 movieDTO.getMovieId(),
                                 movieDTO.getTitle(),
                                 movieDTO.getGenres(),
-                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0))/ (float)10,
+                                (Optional.ofNullable(averageRating.get(movieDTO.getMovieId())).orElse((float) 0.0)),
                                 getLikedRating(totalGoodRatings,totalRatings,movieDTO.getMovieId()));
                     })
                     .sorted(comparator)
